@@ -3,7 +3,7 @@
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="description" content="CHUM VÉ SỐ - Dò vé số Xổ Số Miền Nam (XSMN) trực tuyến. Kết quả từ Minh Ngọc.">
     <meta name="theme-color" content="#1a1a2e">
     <meta name="apple-mobile-web-app-capable" content="yes">
@@ -44,6 +44,10 @@
             <textarea id="userNumbers" class="neu-input textarea" rows="2" inputmode="numeric"
                 placeholder="VD: 123456789012 → tự tách 123456 + 789012"></textarea>
 
+            <button class="neu-btn primary full-width glow-btn" id="checkBtn">
+                🔍 DÒ VÉ NGAY
+            </button>
+
             <div class="input-row">
                 <div class="option-group">
                     <label for="resultDate" class="option-label">📅 Ngày xổ</label>
@@ -68,10 +72,6 @@
                     <!-- Populated dynamically -->
                 </div>
             </div>
-
-            <button class="neu-btn primary full-width glow-btn" id="checkBtn">
-                🔍 DÒ VÉ NGAY
-            </button>
         </section>
 
         <!-- Status / Loading -->
@@ -100,6 +100,9 @@
 
     <!-- Hoa Mai Overlay -->
     <div id="hoaMaiOverlay" class="hoa-mai-overlay"></div>
+
+    <!-- Click Sparkle Overlay -->
+    <div id="sparkleOverlay" class="sparkle-overlay"></div>
 
     <!-- Celebration Modal -->
     <div id="celebrationModal" class="celebration-modal" style="display:none;">

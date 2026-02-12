@@ -104,8 +104,36 @@ const App = (() => {
             }
         });
 
+        // Click sparkle effects
+        document.addEventListener('click', spawnSparkles);
+
         // Try autoplay music; browsers may block until user interacts
         setupMusic();
+    }
+
+    /* ==============================
+       SPARKLE CLICK EFFECTS
+       ============================== */
+    const SPARKLE_EMOJIS = ['✨', '💰', '🎫', '🎰', '🎲', '💎', '🌟', '⭐', '💫', '🪙'];
+    function spawnSparkles(e) {
+        const overlay = $('#sparkleOverlay');
+        if (!overlay) return;
+        const count = 4 + Math.floor(Math.random() * 4);
+        for (let i = 0; i < count; i++) {
+            const el = document.createElement('span');
+            el.className = 'sparkle';
+            el.textContent = SPARKLE_EMOJIS[Math.floor(Math.random() * SPARKLE_EMOJIS.length)];
+            el.style.left = e.clientX + 'px';
+            el.style.top = e.clientY + 'px';
+            el.style.fontSize = (0.7 + Math.random() * 0.8) + 'rem';
+            const angle = Math.random() * Math.PI * 2;
+            const dist = 30 + Math.random() * 60;
+            el.style.setProperty('--sx', Math.cos(angle) * dist + 'px');
+            el.style.setProperty('--sy', Math.sin(angle) * dist + 'px');
+            el.style.setProperty('--sr', (Math.random() * 360 - 180) + 'deg');
+            overlay.appendChild(el);
+            setTimeout(() => el.remove(), 900);
+        }
     }
 
     /* ==============================
