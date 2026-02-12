@@ -71,12 +71,37 @@ const App = (() => {
         $('#consolationClose').addEventListener('click', closeConsolation);
         $('#consolationOk').addEventListener('click', closeConsolation);
         $('#resultDate').addEventListener('change', populateProvinces);
-        $('#musicToggle').addEventListener('click', toggleMusic);
 
-        // Only allow digits in the number input
+        // Double-click anywhere on screen to toggle music
+        document.addEventListener('dblclick', (e) => {
+            // Don't toggle when double-clicking on input fields or buttons
+            if (e.target.closest('textarea, input, select, button, .province-chip')) return;
+            toggleMusic();
+        });
+
+        // Only allow digits + auto-space every 6 digits in the number input
         const numInput = $('#userNumbers');
         numInput.addEventListener('input', () => {
-            numInput.value = numInput.value.replace(/[^0-9]/g, '');
+            const cursorPos = numInput.selectionStart;
+            const rawBefore = numInput.value;
+            const digitsOnly = rawBefore.replace(/[^0-9]/g, '');
+            // Insert space every 6 digits
+            let formatted = '';
+            for (let i = 0; i < digitsOnly.length; i++) {
+                if (i > 0 && i % 6 === 0) formatted += ' ';
+                formatted += digitsOnly[i];
+            }
+            if (numInput.value !== formatted) {
+                numInput.value = formatted;
+                // Adjust cursor position
+                const digitsBefore = rawBefore.slice(0, cursorPos).replace(/[^0-9]/g, '').length;
+                let newPos = 0, count = 0;
+                for (let i = 0; i < formatted.length && count < digitsBefore; i++) {
+                    newPos = i + 1;
+                    if (formatted[i] !== ' ') count++;
+                }
+                numInput.setSelectionRange(newPos, newPos);
+            }
         });
 
         // Try autoplay music; browsers may block until user interacts
@@ -84,7 +109,7 @@ const App = (() => {
     }
 
     /* ==============================
-       MUSIC
+       MUSIC — double-click to toggle
        ============================== */
     let musicPlaying = true;
 
@@ -95,16 +120,13 @@ const App = (() => {
         const playPromise = audio.play();
         if (playPromise) {
             playPromise.catch(() => {
-                // Autoplay blocked — start on first user click anywhere
+                // Autoplay blocked — start on first user interaction
                 musicPlaying = false;
-                $('#musicIcon').textContent = '🔇';
                 document.addEventListener('click', function resumeMusic() {
-                    if (!musicPlaying) {
-                        audio.play().then(() => {
-                            musicPlaying = true;
-                            $('#musicIcon').textContent = '🔊';
-                        }).catch(() => { });
-                    }
+                    const audio = $('#bgMusic');
+                    audio.play().then(() => {
+                        musicPlaying = true;
+                    }).catch(() => { });
                     document.removeEventListener('click', resumeMusic);
                 }, { once: true });
             });
@@ -117,11 +139,9 @@ const App = (() => {
         if (musicPlaying) {
             audio.pause();
             musicPlaying = false;
-            $('#musicIcon').textContent = '🔇';
         } else {
             audio.play().catch(() => { });
             musicPlaying = true;
-            $('#musicIcon').textContent = '🔊';
         }
     }
 
