@@ -4,8 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
-    <meta name="description"
-        content="CHUM VÉ SỐ - Dò vé số Xổ Số Miền Nam (XSMN) trực tuyến. Kết quả từ Minh Ngọc, nhanh chóng và chính xác.">
+    <meta name="description" content="CHUM VÉ SỐ - Dò vé số Xổ Số Miền Nam (XSMN) trực tuyến. Kết quả từ Minh Ngọc.">
     <meta name="theme-color" content="#1a1a2e">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -39,106 +38,96 @@
             </div>
         </header>
 
-        <!-- Tab Navigation -->
-        <nav class="tab-nav" role="tablist" aria-label="Chức năng chính">
-            <button class="tab-btn active" role="tab" aria-selected="true" data-tab="results" id="tab-btn-results">
-                <span class="tab-icon">📊</span>
-                <span class="tab-label">Kết Quả</span>
-            </button>
-            <button class="tab-btn" role="tab" aria-selected="false" data-tab="check" id="tab-btn-check">
-                <span class="tab-icon">🔍</span>
-                <span class="tab-label">Dò Số</span>
-            </button>
-            <button class="tab-btn" role="tab" aria-selected="false" data-tab="history" id="tab-btn-history">
-                <span class="tab-icon">📋</span>
-                <span class="tab-label">Lịch Sử</span>
-            </button>
-        </nav>
+        <!-- Input Section -->
+        <section class="card input-card">
+            <label for="userNumbers" class="card-label">🎫 Nhập số vé (mỗi số trên 1 dòng)</label>
+            <textarea id="userNumbers" class="neu-input textarea" rows="3"
+                placeholder="Ví dụ:&#10;123456&#10;789012&#10;345678"></textarea>
 
-        <!-- Main Content -->
-        <main class="main-content">
-            <!-- Tab: Results -->
-            <section class="tab-content active" id="content-results" role="tabpanel" aria-labelledby="tab-btn-results">
-                <div class="card date-picker-card">
-                    <label for="resultDate" class="card-label">📅 Chọn ngày xổ số</label>
-                    <div class="date-row">
-                        <input type="date" id="resultDate" class="neu-input">
-                        <button class="neu-btn primary" id="loadResultsBtn">
-                            <span>Xem</span>
-                        </button>
-                    </div>
-                    <div class="quick-dates">
-                        <button class="chip" data-offset="0">Hôm nay</button>
-                        <button class="chip" data-offset="-1">Hôm qua</button>
-                        <button class="chip" data-offset="-2">2 ngày trước</button>
-                    </div>
+            <div class="input-row">
+                <div class="option-group">
+                    <label for="resultDate" class="option-label">📅 Ngày xổ</label>
+                    <input type="date" id="resultDate" class="neu-input">
                 </div>
-                <div id="resultsStatus" class="status-message" style="display:none;"></div>
-                <div id="resultsLoading" class="loading-container" style="display:none;">
-                    <div class="spinner"></div>
-                    <p>Đang tải kết quả...</p>
+                <div class="option-group">
+                    <label for="checkDigits" class="option-label">🔢 So khớp</label>
+                    <select id="checkDigits" class="neu-select">
+                        <option value="2">2 số cuối</option>
+                        <option value="3">3 số cuối</option>
+                        <option value="4">4 số cuối</option>
+                        <option value="5">5 số cuối</option>
+                        <option value="6" selected>6 số cuối</option>
+                    </select>
                 </div>
-                <div id="resultsContainer"></div>
-            </section>
+            </div>
 
-            <!-- Tab: Check Numbers -->
-            <section class="tab-content" id="content-check" role="tabpanel" aria-labelledby="tab-btn-check">
-                <div class="card">
-                    <label for="userNumbers" class="card-label">🎫 Nhập số vé của bạn</label>
-                    <textarea id="userNumbers" class="neu-input textarea" rows="4"
-                        placeholder="Nhập mỗi số trên một dòng&#10;Ví dụ:&#10;123456&#10;789012"></textarea>
-                    <div class="check-options">
-                        <div class="option-group">
-                            <label for="checkDigits" class="option-label">So khớp</label>
-                            <select id="checkDigits" class="neu-select">
-                                <option value="2">2 số cuối</option>
-                                <option value="3">3 số cuối</option>
-                                <option value="4">4 số cuối</option>
-                                <option value="5">5 số cuối</option>
-                                <option value="6" selected>6 số cuối</option>
-                            </select>
-                        </div>
-                        <div class="option-group">
-                            <label for="checkDate" class="option-label">Ngày xổ</label>
-                            <input type="date" id="checkDate" class="neu-input small">
-                        </div>
-                    </div>
-                    <button class="neu-btn primary full-width" id="checkTicketsBtn">
-                        🔍 Dò vé ngay
-                    </button>
+            <div class="option-group">
+                <label class="option-label">🏛️ Chọn đài</label>
+                <div class="province-selector" id="provinceSelector">
+                    <button class="province-chip active" data-province="all">Tất cả đài</button>
+                    <!-- Populated dynamically -->
                 </div>
-                <div id="checkLoading" class="loading-container" style="display:none;">
-                    <div class="spinner"></div>
-                    <p>Đang dò số...</p>
-                </div>
-                <div id="checkResults"></div>
-            </section>
+            </div>
 
-            <!-- Tab: History -->
-            <section class="tab-content" id="content-history" role="tabpanel" aria-labelledby="tab-btn-history">
-                <div id="historyContainer"></div>
-                <div id="historyEmpty" class="empty-state">
-                    <div class="empty-icon">📋</div>
-                    <p>Chưa có lịch sử dò số</p>
-                    <p class="empty-hint">Kết quả dò vé sẽ được lưu tại đây</p>
-                </div>
-                <button class="neu-btn danger full-width" id="clearHistoryBtn" style="display:none;">
-                    🗑️ Xóa toàn bộ lịch sử
-                </button>
-            </section>
-        </main>
+            <button class="neu-btn primary full-width glow-btn" id="checkBtn">
+                🔍 DÒ VÉ NGAY
+            </button>
+        </section>
+
+        <!-- Status / Loading -->
+        <div id="statusMsg" class="status-message" style="display:none;"></div>
+        <div id="loadingEl" class="loading-container" style="display:none;">
+            <div class="spinner"></div>
+            <p>Đang tải kết quả & dò số...</p>
+        </div>
+
+        <!-- Result Banner (win/lose) -->
+        <div id="resultBanner" style="display:none;"></div>
+
+        <!-- Results Tables -->
+        <div id="resultsContainer"></div>
 
         <!-- Footer -->
         <footer class="app-footer">
             <p>Dữ liệu từ <strong>Đài Xổ Số Minh Ngọc</strong> — xskt.com.vn</p>
-            <p class="footer-sub">© 2026 CHUM VÉ SỐ • v1.0</p>
+            <p class="footer-sub">© 2026 CHUM VÉ SỐ • v2.0</p>
         </footer>
+    </div>
+
+    <!-- Fireworks Canvas -->
+    <canvas id="fireworksCanvas"></canvas>
+
+    <!-- Hoa Mai Overlay -->
+    <div id="hoaMaiOverlay" class="hoa-mai-overlay"></div>
+
+    <!-- Celebration Modal -->
+    <div id="celebrationModal" class="celebration-modal" style="display:none;">
+        <div class="celebration-content">
+            <div class="celebration-close" id="celebrationClose">✕</div>
+            <div class="celebration-icon">🎉</div>
+            <h2 class="celebration-title">CHÚC MỪNG!</h2>
+            <p class="celebration-subtitle" id="celebrationText">Bạn đã trúng thưởng!</p>
+            <div id="celebrationDetails" class="celebration-details"></div>
+            <button class="neu-btn primary" id="celebrationOk">Tuyệt vời! 🎊</button>
+        </div>
+    </div>
+
+    <!-- Consolation Modal -->
+    <div id="consolationModal" class="consolation-modal" style="display:none;">
+        <div class="consolation-content">
+            <div class="consolation-close" id="consolationClose">✕</div>
+            <div class="consolation-icon">💪</div>
+            <h2 class="consolation-title">CHƯA TRÚNG LẦN NÀY</h2>
+            <p class="consolation-subtitle">Đừng bỏ cuộc! Vận may sẽ đến với bạn! 🍀</p>
+            <p class="consolation-quote">"Kiên trì là mẹ thành công"</p>
+            <button class="neu-btn primary" id="consolationOk">Tiếp tục cố gắng! 💪</button>
+        </div>
     </div>
 
     <script src="assets/app.js"></script>
     <script>
         if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('./sw.js').catch(err => console.warn('SW registration failed:', err));
+            navigator.serviceWorker.register('./sw.js').catch(err => console.warn('SW:', err));
         }
     </script>
 </body>
