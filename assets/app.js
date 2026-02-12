@@ -493,9 +493,27 @@ const App = (() => {
     /* ==============================
        MAIN CHECK FLOW
        ============================== */
+    // Digits to match per prize level (trailing digits)
+    const PRIZE_DIGITS = {
+        db: 6, g1: 5, g2: 5, g3: 5, g4: 5,
+        g5: 4, g6: 4, g7: 3, g8: 2
+    };
+    // Prize amounts in VND
+    const PRIZE_AMOUNTS = {
+        db: '2 tỷ', phu_db: '50 triệu', kk: '6 triệu',
+        g1: '30 triệu', g2: '15 triệu', g3: '10 triệu',
+        g4: '3 triệu', g5: '1 triệu', g6: '400K',
+        g7: '200K', g8: '100K'
+    };
+    const PRIZE_FULL_NAMES = {
+        db: '🏆 Đặc Biệt', phu_db: '⭐ Phụ ĐB', kk: '🎗 Khuyến Khích',
+        g1: '🥇 Giải Nhất', g2: '🥈 Giải Nhì', g3: '🥉 Giải Ba',
+        g4: '🎖 Giải Tư', g5: '🎯 Giải Năm', g6: '🎫 Giải Sáu',
+        g7: '🎟 Giải Bảy', g8: '🎁 Giải Tám'
+    };
+
     async function doCheck() {
         const raw = $('#userNumbers').value.replace(/[^0-9]/g, '');
-        const digits = parseInt($('#checkDigits').value);
         const dateStr = $('#resultDate').value;
 
         if (!raw) { showStatus('Vui lòng nhập số vé cần dò', 'error'); return; }
@@ -535,20 +553,46 @@ const App = (() => {
                 if (filtered.length) results = filtered;
             }
 
-            // Find all matches
+            // ===== OFFICIAL XSMN MATCHING =====
+            // A ticket can win MULTIPLE prizes simultaneously
             const allMatches = [];
             const matchedNumbersPerProvince = new Map();
 
             for (const num of userNums) {
-                const suffix = num.slice(-digits);
                 for (const r of results) {
+                    // Check EVERY prize level independently
                     for (const [key, nums] of Object.entries(r.prizes)) {
+                        const digits = PRIZE_DIGITS[key];
+                        if (!digits || num.length < digits) continue;
+                        const suffix = num.slice(-digits);
                         for (const n of nums) {
                             if (n.slice(-digits) === suffix) {
-                                allMatches.push({ userNum: num, prize: key, number: n, province: r.province });
+                                allMatches.push({
+                                    userNum: num, prize: key, number: n,
+                                    province: r.province, amount: PRIZE_AMOUNTS[key]
+                                });
                                 if (!matchedNumbersPerProvince.has(r.province))
                                     matchedNumbersPerProvince.set(r.province, new Set());
                                 matchedNumbersPerProvince.get(r.province).add(n);
+                            }
+                        }
+                    }
+                    // Special: Giải Phụ ĐB — last 5 of ĐB match, first digit wrong
+                    const dbNums = r.prizes.db || [];
+                    if (num.length >= 6) {
+                        for (const dbN of dbNums) {
+                            if (dbN.length >= 6 && dbN.slice(-5) === num.slice(-5) && dbN[0] !== num[0]) {
+                                allMatches.push({ userNum: num, prize: 'phu_db', number: dbN, province: r.province, amount: PRIZE_AMOUNTS.phu_db });
+                            }
+                        }
+                        // Special: Giải Khuyến Khích — 5/6 digits of ĐB match (differ exactly 1)
+                        for (const dbN of dbNums) {
+                            if (dbN.length >= 6) {
+                                let diff = 0;
+                                for (let i = 0; i < 6; i++) { if (dbN[i] !== num.slice(-6)[i]) diff++; }
+                                if (diff === 1 && !(dbN.slice(-5) === num.slice(-5) && dbN[0] !== num[0])) {
+                                    allMatches.push({ userNum: num, prize: 'kk', number: dbN, province: r.province, amount: PRIZE_AMOUNTS.kk });
+                                }
                             }
                         }
                     }
@@ -557,7 +601,7 @@ const App = (() => {
 
             // Render results table with highlights
             const dow = new Date(dateStr).getDay();
-            let html = `<div class="results-summary">📊 <strong>${DAY_NAMES[dow]}</strong>, ${fmtDisplay(dateStr)} — ${results.length} đài — Dò ${userNums.length} số (${digits} số cuối)</div>`;
+            let html = `<div class="results-summary">📊 <strong>${DAY_NAMES[dow]}</strong>, ${fmtDisplay(dateStr)} — ${results.length} đài — Dò ${userNums.length} vé</div>`;
 
             html += renderKQXSTable(results, dateStr, matchedNumbersPerProvince);
             resContainer.innerHTML = html;
@@ -639,10 +683,13 @@ const App = (() => {
         banner.style.display = 'block';
 
         let detailsHtml = '';
+        let totalValue = 0;
         matches.forEach(m => {
+            const name = PRIZE_FULL_NAMES[m.prize] || PRIZE_NAMES[m.prize] || m.prize;
             detailsHtml += `<div class="match-line">
-                <span class="prize-tag">${PRIZE_NAMES[m.prize] || m.prize}</span>
+                <span class="prize-tag">${name}</span>
                 <span>Số <strong>${m.userNum}</strong> → ${m.number}</span>
+                <span class="amount-tag">${m.amount || ''}</span>
                 <span class="province-tag">${m.province}</span>
             </div>`;
         });

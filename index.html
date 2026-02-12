@@ -48,28 +48,16 @@
                 🔍 DÒ VÉ NGAY
             </button>
 
-            <div class="input-row">
-                <div class="option-group">
-                    <label for="resultDate" class="option-label">📅 Ngày xổ</label>
-                    <input type="date" id="resultDate" class="neu-input">
+            <div class="compact-options">
+                <div class="option-inline">
+                    <span class="option-label-inline">📅</span>
+                    <input type="date" id="resultDate" class="neu-input compact-date">
                 </div>
-                <div class="option-group">
-                    <label for="checkDigits" class="option-label">🔢 So khớp</label>
-                    <select id="checkDigits" class="neu-select">
-                        <option value="2">2 số cuối</option>
-                        <option value="3">3 số cuối</option>
-                        <option value="4">4 số cuối</option>
-                        <option value="5">5 số cuối</option>
-                        <option value="6" selected>6 số cuối</option>
-                    </select>
-                </div>
-            </div>
-
-            <div class="option-group">
-                <label class="option-label">🏛️ Chọn đài</label>
-                <div class="province-selector" id="provinceSelector">
-                    <button class="province-chip active" data-province="all">Tất cả đài</button>
-                    <!-- Populated dynamically -->
+                <div class="option-inline province-wrap">
+                    <span class="option-label-inline">🏛️</span>
+                    <div class="province-selector" id="provinceSelector">
+                        <button class="province-chip active" data-province="all">Tất cả</button>
+                    </div>
                 </div>
             </div>
         </section>
