@@ -5,7 +5,7 @@
 
 :root {
     --font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-    --max-width: 540px;
+    --max-width: 680px;
     --radius: 16px;
     --radius-sm: 10px;
     --radius-xs: 6px;
@@ -517,118 +517,225 @@ input[type="date"]::-webkit-calendar-picker-indicator {
     border: 1px solid rgba(99, 179, 237, 0.2)
 }
 
-/* ===== RESULTS TABLE (province cards) ===== */
-.province-card {
+/* ===== KQXS TABLE (minhngoc.net style) ===== */
+.kqxs-card {
     background: var(--bg-card);
     border-radius: var(--radius);
     margin-bottom: 16px;
     box-shadow: var(--neu-shadow);
     overflow: hidden;
-    animation: cardSlideIn 0.4s ease both
+    animation: cardSlideIn 0.4s ease both;
 }
 
 @keyframes cardSlideIn {
     from {
         opacity: 0;
-        transform: translateY(20px)
+        transform: translateY(20px);
     }
 
     to {
         opacity: 1;
-        transform: translateY(0)
+        transform: translateY(0);
     }
 }
 
-.province-header {
-    padding: 14px 18px;
-    background: linear-gradient(135deg, var(--accent-glow), transparent);
-    border-bottom: 1px solid var(--divider);
-    display: flex;
-    align-items: center;
-    gap: 10px
-}
-
-.province-name {
-    font-size: 0.95rem;
-    font-weight: 700;
-    color: var(--accent)
-}
-
-.province-date {
-    font-size: 0.72rem;
-    color: var(--text-muted);
-    margin-left: auto
-}
-
-.results-table {
-    width: 100%;
-    border-collapse: collapse
-}
-
-.results-table td {
-    padding: 8px 14px;
-    border-bottom: 1px solid var(--divider);
-    font-size: 0.82rem;
-    vertical-align: middle
-}
-
-.results-table tr:last-child td {
-    border-bottom: none
-}
-
-.prize-label {
-    width: 45px;
-    font-weight: 600;
-    color: var(--text-muted);
-    font-size: 0.72rem;
+/* Title bar */
+.kqxs-title-bar {
+    background: linear-gradient(135deg, #c0392b, #e74c3c);
+    color: #fff;
     text-align: center;
-    white-space: nowrap
+    padding: 10px 14px;
+    font-weight: 800;
+    font-size: 0.82rem;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
 }
 
-.prize-label.special {
-    color: var(--danger);
-    font-weight: 700
+[data-theme="dark"] .kqxs-title-bar {
+    background: linear-gradient(135deg, #b71c1c, #d32f2f);
 }
 
-.prize-numbers {
+/* Main table */
+.kqxs-table {
+    width: 100%;
+    border-collapse: collapse;
     font-variant-numeric: tabular-nums;
-    font-weight: 500;
-    letter-spacing: 1px;
-    color: var(--text-primary);
-    line-height: 1.9
+    table-layout: fixed;
 }
 
-.prize-numbers.special {
-    font-size: 1.2rem;
+.kqxs-table th,
+.kqxs-table td {
+    border: 1px solid var(--divider);
+    padding: 6px 4px;
+    text-align: center;
+    vertical-align: middle;
+    font-size: 0.8rem;
+}
+
+.kqxs-table th {
+    background: var(--bg-input);
+    font-weight: 700;
+    color: var(--accent);
+    font-size: 0.78rem;
+    padding: 8px 4px;
+}
+
+/* Day + date header cell */
+.kqxs-day-cell {
+    background: var(--bg-input) !important;
+    color: var(--text-secondary) !important;
+    font-weight: 600 !important;
+    font-size: 0.7rem !important;
+    line-height: 1.4;
+    width: 70px;
+}
+
+/* Province code sub-header */
+.kqxs-code-row th {
+    font-size: 0.65rem !important;
+    color: var(--text-muted) !important;
+    font-weight: 500 !important;
+    padding: 4px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+/* Prize name column */
+.kqxs-prize-name {
+    background: var(--bg-input) !important;
+    color: var(--text-secondary);
+    font-weight: 600;
+    font-size: 0.68rem !important;
+    width: 70px;
+    white-space: nowrap;
+    padding: 6px 6px !important;
+}
+
+/* Number cells */
+.kqxs-num {
+    font-weight: 500;
+    color: var(--text-primary);
+    letter-spacing: 1px;
+    line-height: 1.7;
+    word-break: break-word;
+}
+
+/* G8 - big bold */
+.kqxs-g8 .kqxs-num {
+    font-size: 1.5rem;
     font-weight: 800;
     color: var(--accent);
-    letter-spacing: 3px;
-    text-shadow: 0 0 20px var(--accent-glow)
+    letter-spacing: 2px;
+    padding: 8px 4px;
+}
+
+/* Province-specific G8 colors */
+.kqxs-g8 .kqxs-num:nth-child(2) {
+    color: #e74c3c;
+}
+
+.kqxs-g8 .kqxs-num:nth-child(3) {
+    color: #2980b9;
+}
+
+.kqxs-g8 .kqxs-num:nth-child(4) {
+    color: #27ae60;
+}
+
+[data-theme="dark"] .kqxs-g8 .kqxs-num:nth-child(2) {
+    color: #fc8181;
+}
+
+[data-theme="dark"] .kqxs-g8 .kqxs-num:nth-child(3) {
+    color: #63b3ed;
+}
+
+[data-theme="dark"] .kqxs-g8 .kqxs-num:nth-child(4) {
+    color: #48bb78;
+}
+
+/* ĐB - large bold red */
+.kqxs-db .kqxs-num {
+    font-size: 1.15rem;
+    font-weight: 800;
+    color: #e74c3c;
+    letter-spacing: 2px;
+    padding: 10px 4px;
+    text-shadow: 0 0 12px rgba(231, 76, 60, 0.2);
+}
+
+[data-theme="dark"] .kqxs-db .kqxs-num {
+    color: #fc8181;
+    text-shadow: 0 0 15px rgba(252, 129, 129, 0.25);
+}
+
+.kqxs-db .kqxs-prize-name {
+    color: #e74c3c !important;
+    font-weight: 700 !important;
+}
+
+[data-theme="dark"] .kqxs-db .kqxs-prize-name {
+    color: #fc8181 !important;
+}
+
+/* G7 */
+.kqxs-g7 .kqxs-num {
+    font-size: 0.95rem;
+    font-weight: 600;
+}
+
+/* G1 */
+.kqxs-g1 .kqxs-num {
+    font-size: 0.95rem;
+    font-weight: 600;
+}
+
+/* Alternating row bg */
+.kqxs-table tbody tr:nth-child(odd) {
+    background: var(--bg-card);
+}
+
+.kqxs-table tbody tr:nth-child(even) {
+    background: var(--bg-primary);
+}
+
+.kqxs-g8 {
+    background: var(--bg-card) !important;
+}
+
+.kqxs-db {
+    background: var(--bg-input) !important;
+}
+
+/* Multi-number (displayed as stacked lines in cell) */
+.kqxs-num .num-line {
+    display: block;
+    padding: 1px 0;
 }
 
 /* Highlighted matching number */
-.prize-numbers .matched {
+.kqxs-num .matched {
     background: var(--highlight-bg);
-    color: var(--highlight-text);
+    color: var(--highlight-text) !important;
     font-weight: 800;
-    padding: 3px 8px;
-    border-radius: 6px;
+    padding: 2px 6px;
+    border-radius: 5px;
     border: 2px solid var(--highlight-border);
     animation: matchGlow 1.2s ease-in-out infinite alternate;
     display: inline-block;
-    margin: 2px;
     text-shadow: 0 0 8px var(--accent-glow);
 }
 
 @keyframes matchGlow {
     0% {
         box-shadow: 0 0 4px var(--accent-glow);
-        transform: scale(1)
+        transform: scale(1);
     }
 
     100% {
         box-shadow: 0 0 16px var(--accent-glow), 0 0 30px var(--accent-glow);
-        transform: scale(1.05)
+        transform: scale(1.05);
     }
 }
 
@@ -642,11 +749,40 @@ input[type="date"]::-webkit-calendar-picker-indicator {
     color: var(--text-secondary);
     display: flex;
     align-items: center;
-    gap: 8px
+    gap: 8px;
 }
 
 .results-summary strong {
-    color: var(--accent)
+    color: var(--accent);
+}
+
+/* Mobile: scroll horizontally if needed */
+.kqxs-scroll {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+@media(max-width:420px) {
+
+    .kqxs-table th,
+    .kqxs-table td {
+        font-size: 0.72rem;
+        padding: 4px 2px;
+    }
+
+    .kqxs-g8 .kqxs-num {
+        font-size: 1.2rem;
+    }
+
+    .kqxs-db .kqxs-num {
+        font-size: 0.95rem;
+    }
+
+    .kqxs-day-cell,
+    .kqxs-prize-name {
+        width: 55px;
+        font-size: 0.6rem !important;
+    }
 }
 
 /* ===== FIREWORKS CANVAS ===== */
