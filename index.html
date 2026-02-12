@@ -32,17 +32,22 @@
                         <p class="subtitle">Dò Xổ Số Miền Nam</p>
                     </div>
                 </div>
-                <button class="theme-toggle" id="themeToggle" aria-label="Chuyển đổi giao diện sáng tối">
-                    <span class="theme-icon" id="themeIcon">🌙</span>
-                </button>
+                <div style="display:flex;gap:8px;align-items:center">
+                    <button class="theme-toggle" id="musicToggle" aria-label="Bật/Tắt nhạc">
+                        <span class="theme-icon" id="musicIcon">🔊</span>
+                    </button>
+                    <button class="theme-toggle" id="themeToggle" aria-label="Chuyển đổi giao diện sáng tối">
+                        <span class="theme-icon" id="themeIcon">🌙</span>
+                    </button>
+                </div>
             </div>
         </header>
 
         <!-- Input Section -->
         <section class="card input-card">
-            <label for="userNumbers" class="card-label">🎫 Nhập số vé (mỗi số trên 1 dòng)</label>
-            <textarea id="userNumbers" class="neu-input textarea" rows="3"
-                placeholder="Ví dụ:&#10;123456&#10;789012&#10;345678"></textarea>
+            <label for="userNumbers" class="card-label">🎫 Nhập số vé (chỉ nhập số, cứ 6 số = 1 vé)</label>
+            <textarea id="userNumbers" class="neu-input textarea" rows="2" inputmode="numeric"
+                placeholder="VD: 123456789012 → tự tách 123456 + 789012"></textarea>
 
             <div class="input-row">
                 <div class="option-group">
@@ -95,6 +100,7 @@
     </div>
 
     <!-- Fireworks Canvas -->
+    <audio id="bgMusic" src="nhacxoso.mp3" loop autoplay></audio>
     <canvas id="fireworksCanvas"></canvas>
 
     <!-- Hoa Mai Overlay -->

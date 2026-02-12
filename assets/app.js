@@ -71,6 +71,58 @@ const App = (() => {
         $('#consolationClose').addEventListener('click', closeConsolation);
         $('#consolationOk').addEventListener('click', closeConsolation);
         $('#resultDate').addEventListener('change', populateProvinces);
+        $('#musicToggle').addEventListener('click', toggleMusic);
+
+        // Only allow digits in the number input
+        const numInput = $('#userNumbers');
+        numInput.addEventListener('input', () => {
+            numInput.value = numInput.value.replace(/[^0-9]/g, '');
+        });
+
+        // Try autoplay music; browsers may block until user interacts
+        setupMusic();
+    }
+
+    /* ==============================
+       MUSIC
+       ============================== */
+    let musicPlaying = true;
+
+    function setupMusic() {
+        const audio = $('#bgMusic');
+        if (!audio) return;
+        audio.volume = 0.4;
+        const playPromise = audio.play();
+        if (playPromise) {
+            playPromise.catch(() => {
+                // Autoplay blocked — start on first user click anywhere
+                musicPlaying = false;
+                $('#musicIcon').textContent = '🔇';
+                document.addEventListener('click', function resumeMusic() {
+                    if (!musicPlaying) {
+                        audio.play().then(() => {
+                            musicPlaying = true;
+                            $('#musicIcon').textContent = '🔊';
+                        }).catch(() => { });
+                    }
+                    document.removeEventListener('click', resumeMusic);
+                }, { once: true });
+            });
+        }
+    }
+
+    function toggleMusic() {
+        const audio = $('#bgMusic');
+        if (!audio) return;
+        if (musicPlaying) {
+            audio.pause();
+            musicPlaying = false;
+            $('#musicIcon').textContent = '🔇';
+        } else {
+            audio.play().catch(() => { });
+            musicPlaying = true;
+            $('#musicIcon').textContent = '🔊';
+        }
     }
 
     /* ==============================
@@ -394,14 +446,19 @@ const App = (() => {
        MAIN CHECK FLOW
        ============================== */
     async function doCheck() {
-        const raw = $('#userNumbers').value.trim();
+        const raw = $('#userNumbers').value.replace(/[^0-9]/g, '');
         const digits = parseInt($('#checkDigits').value);
         const dateStr = $('#resultDate').value;
 
         if (!raw) { showStatus('Vui lòng nhập số vé cần dò', 'error'); return; }
         if (!dateStr) { showStatus('Vui lòng chọn ngày xổ', 'error'); return; }
 
-        const userNums = raw.split(/[\n,;\s]+/).map(n => n.trim()).filter(n => /^\d{2,}$/.test(n));
+        // Auto-split continuous digits into 6-digit ticket numbers
+        const userNums = [];
+        for (let i = 0; i < raw.length; i += 6) {
+            const chunk = raw.slice(i, i + 6);
+            if (chunk.length >= 2) userNums.push(chunk);
+        }
         if (!userNums.length) { showStatus('Số vé không hợp lệ. Nhập số có ít nhất 2 chữ số.', 'error'); return; }
 
         const loading = $('#loadingEl');
@@ -457,11 +514,9 @@ const App = (() => {
             html += renderKQXSTable(results, dateStr, matchedNumbersPerProvince);
             resContainer.innerHTML = html;
 
-            // Show win/lose
+            // Show win only (no notification if losing)
             if (allMatches.length > 0) {
                 showWin(allMatches);
-            } else {
-                showLose();
             }
         } catch (err) {
             loading.style.display = 'none';
