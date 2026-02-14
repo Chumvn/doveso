@@ -2,7 +2,7 @@
     "name": "CHUM VÉ SỐ",
     "short_name": "CHUM VÉ SỐ",
     "description": "Dò vé số Xổ Số Miền Nam (XSMN) trực tuyến. Kết quả từ Minh Ngọc.",
-    "start_url": "./",
+    "start_url": "./index.html",
     "display": "standalone",
     "background_color": "#1a1a2e",
     "theme_color": "#1a1a2e",
@@ -24,4 +24,3 @@
     ],
     "categories": ["utilities", "entertainment"]
 }
-
