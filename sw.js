@@ -1,7 +1,7 @@
 /* ============================================
    CHUM VÉ SỐ — Service Worker (Offline Cache)
    ============================================ */
-const CACHE_NAME = 'chum-veso-v1';
+const CACHE_NAME = 'chum-veso-v3';
 const STATIC_ASSETS = [
     './',
     './index.html',

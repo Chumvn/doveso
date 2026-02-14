@@ -1,15 +1,18 @@
 /* ============================================
-   CHUM VÉ SỐ — App Logic v3.0
-   Data from xskt.com.vn (RSS + HTML fallback)
+   CHUM VÉ SỐ — App Logic v4.0
+   Data from minhngoc.net (primary) + xskt.com.vn RSS (fallback)
    Display styled like minhngoc.net
    ============================================ */
 const App = (() => {
     'use strict';
 
     /* ---- Constants ---- */
+    const MINHNGOC_URL = dateStr => {
+        const p = dateStr.split('-');
+        return `https://www.minhngoc.net/ket-qua-xo-so/mien-nam/${p[2]}-${p[1]}-${p[0]}.html`;
+    };
     const RSS_URL = 'https://xskt.com.vn/rss-feed/mien-nam-xsmn.rss';
-    const HTML_URL = date => `https://xskt.com.vn/xsmn/ngay-${date}`;
-    // CORS proxies only for the HTML fallback
+    // CORS proxies — needed for cross-origin fetches
     const CORS_PROXIES = [
         url => `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`,
         url => `https://corsproxy.io/?${encodeURIComponent(url)}`,
@@ -203,11 +206,6 @@ const App = (() => {
         return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
     }
     function fmtDisplay(s) { const p = s.split('-'); return `${p[2]}/${p[1]}/${p[0]}`; }
-    // YYYY-MM-DD → D-M-YYYY for xskt.com.vn URL
-    function fmtXsktUrl(s) {
-        const p = s.split('-');
-        return `${parseInt(p[2])}-${parseInt(p[1])}-${p[0]}`;
-    }
     // YYYY-MM-DD → DD/MM/YYYY for RSS matching
     function fmtRssDate(s) {
         const p = s.split('-');
@@ -243,144 +241,24 @@ const App = (() => {
        DATA FETCHING
        ============================== */
 
-    /* Primary: RSS Feed (no CORS issue at all) */
-    async function fetchFromRSS(dateStr) {
+    /* Primary: Fetch from minhngoc.net — try direct (no proxy needed from same origin) */
+    async function fetchFromMinhngoc(dateStr) {
+        const url = MINHNGOC_URL(dateStr);
+        // Try direct fetch first (works if no CORS restriction)
         try {
             const ctrl = new AbortController();
-            const t = setTimeout(() => ctrl.abort(), 12000);
-            const resp = await fetch(RSS_URL, { signal: ctrl.signal });
+            const t = setTimeout(() => ctrl.abort(), 10000);
+            const resp = await fetch(url, { signal: ctrl.signal });
             clearTimeout(t);
-            if (!resp.ok) return null;
-            const text = await resp.text();
-            return parseRSS(text, dateStr);
-        } catch (e) {
-            console.warn('RSS fetch failed:', e.message);
-            return null;
-        }
-    }
-
-    /* Parse RSS XML and extract results for a specific date */
-    function parseRSS(xmlText, targetDateStr) {
-        const parser = new DOMParser();
-        const doc = parser.parseFromString(xmlText, 'text/xml');
-        const items = doc.querySelectorAll('item');
-        const targetDisplay = fmtRssDate(targetDateStr); // DD/MM/YYYY
-        const targetParts = targetDateStr.split('-');
-        // Also match DD/M/YYYY and D/M/YYYY format
-        const targetDay = parseInt(targetParts[2]);
-        const targetMonth = parseInt(targetParts[1]);
-        const targetYear = targetParts[0];
-
-        for (const item of items) {
-            const title = item.querySelector('title')?.textContent || '';
-            const pubDate = item.querySelector('pubDate')?.textContent || '';
-            const desc = item.querySelector('description')?.textContent || '';
-
-            // Match date in title like "NGÀY 12/02" or pubDate
-            const titleMatch = title.match(/NGÀY\s+(\d{1,2})\/(\d{1,2})/);
-            let matched = false;
-            if (titleMatch) {
-                const d = parseInt(titleMatch[1]), m = parseInt(titleMatch[2]);
-                if (d === targetDay && m === targetMonth) matched = true;
-            }
-            // Also check pubDate
-            if (!matched && pubDate.includes(targetDisplay)) matched = true;
-            // Check link URL for another date hint
-            if (!matched) {
-                const link = item.querySelector('link')?.textContent || '';
-                if (link.includes(`ngay-${targetDay}-${targetMonth}-${targetYear}`)) matched = true;
-            }
-
-            if (!matched) continue;
-
-            // Parse the description text
-            return parseRSSDescription(desc, targetDateStr);
-        }
-        return null; // Date not found in RSS
-    }
-
-    /* Parse the description block from RSS:
-       [Province Name]
-       ĐB: 702266
-       1: 14760
-       2: 90960
-       3: 63288 - 32469
-       4: ...
-       5: 9346
-       6: 1015 - 3312 - 6260
-       7: 460
-       8: 50
-    */
-    function parseRSSDescription(desc, dateStr) {
-        const results = [];
-        // Split by province blocks
-        const blocks = desc.split(/\[([^\]]+)\]/);
-        // blocks: ['', 'Province1', '\nĐB: ...', 'Province2', '\nĐB: ...', ...]
-        for (let i = 1; i < blocks.length; i += 2) {
-            const provinceName = blocks[i].trim();
-            const data = blocks[i + 1] || '';
-            const prizes = {};
-            const lines = data.trim().split('\n');
-
-            for (const line of lines) {
-                const trimmed = line.trim();
-                if (!trimmed) continue;
-
-                let key = null;
-                let nums = [];
-
-                if (/^ĐB[:：]\s*/i.test(trimmed)) {
-                    key = 'db';
-                    nums = trimmed.replace(/^ĐB[:：]\s*/i, '').split(/\s*-\s*/).map(n => n.trim()).filter(n => /^\d+$/.test(n));
-                } else {
-                    const m = trimmed.match(/^(\d)[:：]\s*(.*)/);
-                    if (m) {
-                        const idx = parseInt(m[1]);
-                        const keyMap = { 1: 'g1', 2: 'g2', 3: 'g3', 4: 'g4', 5: 'g5', 6: 'g6', 7: 'g7', 8: 'g8' };
-                        key = keyMap[idx];
-                        const valPart = m[2];
-                        nums = valPart.split(/\s*-\s*/).map(n => n.trim()).filter(n => /^\d+$/.test(n));
-
-                        // Handle "7: 460" followed by "8: 50" — but also "7: 4608: 50" combined
-                        // The RSS sometimes merges G7 and G8 like "7: 0118: 32"
-                        if (idx === 7 && /^\d{3,4}$/.test(nums[0])) {
-                            // Normal G7 value
-                        }
-                        // Check for merged format "7: XXX8: YY" → G7=XXX, G8=YY
-                        const mergedMatch = valPart.match(/^(\d{3})(\d)[:：]\s*(\d{2})$/);
-                        if (mergedMatch && idx === 7) {
-                            prizes['g7'] = [mergedMatch[1]];
-                            prizes['g8'] = [mergedMatch[3]];
-                            continue;
-                        }
-                        // Another merged format "7: XXXX8: YY"
-                        const mergedMatch2 = valPart.match(/^(\d{3,4})(\d)[:：]\s*(\d{2})$/);
-                        if (!mergedMatch && mergedMatch2 && idx === 7) {
-                            // Could be G7(3-4 digits) then "8:" then G8(2 digits)
-                            const g7val = mergedMatch2[1];
-                            const g8val = mergedMatch2[3];
-                            prizes['g7'] = [g7val];
-                            prizes['g8'] = [g8val];
-                            continue;
-                        }
-                    }
-                }
-
-                if (key && nums.length > 0) {
-                    prizes[key] = nums;
+            if (resp.ok) {
+                const text = await resp.text();
+                if (text && text.length > 500) {
+                    const results = parseMinhngoc(text, dateStr);
+                    if (results && results.length) return results;
                 }
             }
-
-            if (Object.keys(prizes).length > 0) {
-                results.push({ province: provinceName, date: dateStr, prizes });
-            }
-        }
-        return results.length > 0 ? results : null;
-    }
-
-    /* Fallback: Fetch HTML page via CORS proxy */
-    async function fetchFromHTML(dateStr) {
-        const url = HTML_URL(fmtXsktUrl(dateStr));
+        } catch (e) { console.warn('Minhngoc direct failed:', e.message); }
+        // Try via CORS proxies
         for (let i = 0; i < CORS_PROXIES.length; i++) {
             try {
                 const ctrl = new AbortController();
@@ -392,32 +270,116 @@ const App = (() => {
                 try { const j = await resp.json(); text = j.contents || JSON.stringify(j); }
                 catch { text = await resp.text(); }
                 if (text && text.length > 500) {
-                    const results = parseHTMLPage(text, dateStr);
+                    const results = parseMinhngoc(text, dateStr);
                     if (results && results.length) return results;
                 }
-            } catch (e) { console.warn(`Proxy ${i} failed:`, e.message); }
+            } catch (e) { console.warn(`Minhngoc proxy ${i} failed:`, e.message); }
         }
         return null;
     }
 
-    /* Parse HTML page from xskt.com.vn */
-    function parseHTMLPage(html, dateStr) {
+    /* Parse minhngoc.net HTML — structure uses CSS classes:
+       table.rightcl per province, td.tinh for name,
+       td.giai8/giai7/.../giaidb > div for prize numbers */
+    function parseMinhngoc(html, dateStr) {
         const doc = new DOMParser().parseFromString(html, 'text/html');
-        let resultTable = null;
-        const allTables = doc.querySelectorAll('table');
+        // Only parse the first box_kqxs (target date), page may have multiple days
+        const firstBox = doc.querySelector('.box_kqxs');
+        const container = firstBox || doc;
+        const provinceTables = container.querySelectorAll('table.rightcl');
+        if (!provinceTables.length) return null;
 
-        for (const table of allTables) {
-            const text = table.textContent || '';
-            if ((text.includes('Đặc') || text.includes('ĐB') || text.includes('G.1'))
-                && /\d{5,6}/.test(text)) {
-                const rows = table.querySelectorAll('tr');
-                if (rows.length >= 8) { resultTable = table; break; }
+        const results = [];
+        const PRIZE_MAP = {
+            'giai8': 'g8', 'giai7': 'g7', 'giai6': 'g6', 'giai5': 'g5',
+            'giai4': 'g4', 'giai3': 'g3', 'giai2': 'g2', 'giai1': 'g1', 'giaidb': 'db'
+        };
+
+        for (const table of provinceTables) {
+            // Province name from td.tinh
+            const tinhCell = table.querySelector('td.tinh');
+            if (!tinhCell) continue;
+            const province = tinhCell.textContent.trim();
+            if (!province) continue;
+
+            const prizes = {};
+            for (const [cls, key] of Object.entries(PRIZE_MAP)) {
+                const td = table.querySelector(`td.${cls}`);
+                if (!td) continue;
+                const divs = td.querySelectorAll('div');
+                const nums = [];
+                divs.forEach(d => {
+                    const n = d.textContent.trim();
+                    if (/^\d{2,6}$/.test(n)) nums.push(n);
+                });
+                if (nums.length > 0) prizes[key] = nums;
+            }
+
+            if (Object.keys(prizes).length > 0) {
+                results.push({ province, date: dateStr, prizes });
             }
         }
-        if (!resultTable) {
-            for (const table of allTables) {
-                const nums = (table.textContent.match(/\d{5,6}/g) || []);
-                if (nums.length >= 3) { resultTable = table; break; }
+        return results.length > 0 ? results : null;
+    }
+
+    /* Fallback 1: RSS from xskt.com.vn via CORS proxy */
+    async function fetchFromRSS(dateStr) {
+        for (let i = 0; i < CORS_PROXIES.length; i++) {
+            try {
+                const ctrl = new AbortController();
+                const t = setTimeout(() => ctrl.abort(), 12000);
+                const resp = await fetch(CORS_PROXIES[i](RSS_URL), { signal: ctrl.signal });
+                clearTimeout(t);
+                if (!resp.ok) continue;
+                let text;
+                try { const j = await resp.json(); text = j.contents || JSON.stringify(j); }
+                catch { text = await resp.text(); }
+                if (text && text.length > 200) {
+                    const result = parseRSS(text, dateStr);
+                    if (result && result.length) return result;
+                }
+            } catch (e) { console.warn(`RSS proxy ${i} failed:`, e.message); }
+        }
+        return null;
+    }
+
+    /* Fallback 2: HTML page from xskt.com.vn via CORS proxy */
+    async function fetchFromXsktHTML(dateStr) {
+        const p = dateStr.split('-');
+        const url = `https://xskt.com.vn/xsmn/ngay-${parseInt(p[2])}-${parseInt(p[1])}-${p[0]}`;
+        for (let i = 0; i < CORS_PROXIES.length; i++) {
+            try {
+                const ctrl = new AbortController();
+                const t = setTimeout(() => ctrl.abort(), 15000);
+                const resp = await fetch(CORS_PROXIES[i](url), { signal: ctrl.signal });
+                clearTimeout(t);
+                if (!resp.ok) continue;
+                let text;
+                try { const j = await resp.json(); text = j.contents || JSON.stringify(j); }
+                catch { text = await resp.text(); }
+                if (text && text.length > 500) {
+                    // Parse using minhngoc parser (xskt uses similar structure)
+                    // or use simple regex extraction
+                    const results = parseXsktHTML(text, dateStr);
+                    if (results && results.length) return results;
+                }
+            } catch (e) { console.warn(`XSKT proxy ${i} failed:`, e.message); }
+        }
+        return null;
+    }
+
+    /* Parse xskt.com.vn HTML page using regex (avoids DOMParser issues) */
+    function parseXsktHTML(html, dateStr) {
+        // xskt.com.vn uses a table with province headers and prize rows
+        // Try parsing with DOMParser (text/html is safe)
+        const doc = new DOMParser().parseFromString(html, 'text/html');
+        // Look for the results table — contains 5,6-digit numbers
+        let resultTable = null;
+        for (const table of doc.querySelectorAll('table')) {
+            const text = table.textContent || '';
+            if (/\d{5,6}/.test(text)) {
+                const rows = table.querySelectorAll('tr');
+                if (rows.length >= 8) { resultTable = table; break; }
             }
         }
         if (!resultTable) return null;
@@ -425,13 +387,12 @@ const App = (() => {
         const rows = resultTable.querySelectorAll('tr');
         if (rows.length < 3) return null;
 
-        // Extract province names
         const provinces = [];
         const hCells = rows[0].querySelectorAll('td, th');
-        for (let i = 0; i < hCells.length; i++) {
-            const name = hCells[i].textContent.trim().replace(/\s+/g, ' ');
-            if (name && name.length > 1 && !/(giải|kq|tỉnh|^g\.|^đb$)/i.test(name) && !/^\d+$/.test(name)) {
-                provinces.push({ name, prizes: {} });
+        for (const cell of hCells) {
+            const name = cell.textContent.trim().replace(/\s+/g, ' ');
+            if (name && name.length > 1 && !/^(giải|kq|tỉnh|g\.|đb|\d+)$/i.test(name)) {
+                provinces.push({ name: normalizeProvince(name), prizes: {} });
             }
         }
         if (!provinces.length) return null;
@@ -439,14 +400,25 @@ const App = (() => {
         for (let r = 1; r < rows.length; r++) {
             const cells = rows[r].querySelectorAll('td, th');
             if (cells.length < 2) continue;
-            const labelCell = cells[0].textContent.trim().toLowerCase().replace(/\s/g, '');
-            const key = parsePrizeKey(labelCell, r - 1);
+            const label = cells[0].textContent.trim().toLowerCase().replace(/\s/g, '');
+            let key = null;
+            if (/đặcbiệt|đb|db/.test(label)) key = 'db';
+            else if (/nhất|g\.?1/.test(label)) key = 'g1';
+            else if (/nhì|g\.?2/.test(label)) key = 'g2';
+            else if (/ba|g\.?3/.test(label)) key = 'g3';
+            else if (/tư|g\.?4/.test(label)) key = 'g4';
+            else if (/năm|g\.?5/.test(label)) key = 'g5';
+            else if (/sáu|g\.?6/.test(label)) key = 'g6';
+            else if (/bảy|g\.?7/.test(label)) key = 'g7';
+            else if (/tám|g\.?8/.test(label)) key = 'g8';
+            else if (r - 1 < PRIZE_ORDER.length) key = PRIZE_ORDER[r - 1];
             if (!key) continue;
 
             for (let p = 0; p < provinces.length; p++) {
                 const colIdx = p + 1;
                 if (colIdx >= cells.length) continue;
-                const nums = extractNums(cells[colIdx]);
+                const raw = cells[colIdx].textContent.trim();
+                const nums = raw.split(/[\s,\-\|\/\n\r\t]+/).map(s => s.trim()).filter(s => /^\d{2,6}$/.test(s));
                 if (nums.length > 0) {
                     provinces[p].prizes[key] = (provinces[p].prizes[key] || []).concat(nums);
                 }
@@ -458,34 +430,103 @@ const App = (() => {
             .map(p => ({ province: p.name, date: dateStr, prizes: p.prizes }));
     }
 
-    function parsePrizeKey(label, rowIdx) {
-        if (/đb|đặcbiệt|đặc|db/.test(label)) return 'db';
-        if (/nhất|nhat|g\.?1\b/.test(label)) return 'g1';
-        if (/nhì|nhi|g\.?2\b/.test(label)) return 'g2';
-        if (/ba|g\.?3\b/.test(label)) return 'g3';
-        if (/tư|tu|g\.?4\b/.test(label)) return 'g4';
-        if (/năm|nam|g\.?5\b/.test(label)) return 'g5';
-        if (/sáu|sau|g\.?6\b/.test(label)) return 'g6';
-        if (/bảy|bay|g\.?7\b/.test(label)) return 'g7';
-        if (/tám|tam|g\.?8\b/.test(label)) return 'g8';
-        if (rowIdx >= 0 && rowIdx < PRIZE_ORDER.length) return PRIZE_ORDER[rowIdx];
+    /* Province name normalization */
+    const PROVINCE_NORMALIZE = {
+        'Hồ Chí Minh': 'TP. HCM', 'Ho Chi Minh': 'TP. HCM',
+        'HCM': 'TP. HCM', 'Lâm Đồng': 'Đà Lạt'
+    };
+    function normalizeProvince(name) {
+        return PROVINCE_NORMALIZE[name] || name;
+    }
+
+    /* Parse RSS from xskt.com.vn using regex */
+    function parseRSS(rawXml, targetDateStr) {
+        const targetParts = targetDateStr.split('-');
+        const targetDay = parseInt(targetParts[2]);
+        const targetMonth = parseInt(targetParts[1]);
+        const targetYear = targetParts[0];
+        const targetDisplay = fmtRssDate(targetDateStr);
+
+        const itemRegex = /<item>([\s\S]*?)<\/item>/gi;
+        let itemMatch;
+        while ((itemMatch = itemRegex.exec(rawXml)) !== null) {
+            const itemXml = itemMatch[1];
+            const title = (itemXml.match(/<title>([\s\S]*?)<\/title>/i) || [])[1] || '';
+            const pubDate = (itemXml.match(/<pubDate>([\s\S]*?)<\/pubDate>/i) || [])[1] || '';
+            const link = (itemXml.match(/<link>([\s\S]*?)<\/link>/i) || [])[1] || '';
+            const desc = (itemXml.match(/<description>([\s\S]*?)<\/description>/i) || [])[1] || '';
+
+            const titleMatch = title.match(/NGÀY\s+(\d{1,2})\/(\d{1,2})/);
+            let matched = false;
+            if (titleMatch) {
+                const d = parseInt(titleMatch[1]), m = parseInt(titleMatch[2]);
+                if (d === targetDay && m === targetMonth) matched = true;
+            }
+            if (!matched && pubDate.includes(targetDisplay)) matched = true;
+            if (!matched && link.includes(`ngay-${targetDay}-${targetMonth}-${targetYear}`)) matched = true;
+            if (!matched) continue;
+
+            return parseRSSDescription(desc, targetDateStr);
+        }
         return null;
     }
 
-    function extractNums(cell) {
-        const raw = cell.textContent.trim();
-        return raw.split(/[\s,\-\|\/\n\r\t]+/).map(p => p.trim()).filter(p => /^\d{2,6}$/.test(p));
+    function parseRSSDescription(desc, dateStr) {
+        const results = [];
+        const blocks = desc.split(/\[([^\]]+)\]/);
+        for (let i = 1; i < blocks.length; i += 2) {
+            const rawProvince = blocks[i].trim();
+            const provinceName = normalizeProvince(rawProvince);
+            const data = blocks[i + 1] || '';
+            const prizes = {};
+            const lines = data.trim().split(/[\r\n]+/);
+            for (const line of lines) {
+                const trimmed = line.trim();
+                if (!trimmed) continue;
+                let key = null, nums = [];
+                if (/^ĐB[:：]\s*/i.test(trimmed)) {
+                    key = 'db';
+                    nums = trimmed.replace(/^ĐB[:：]\s*/i, '').split(/\s*-\s*/).map(n => n.trim()).filter(n => /^\d+$/.test(n));
+                } else {
+                    const m = trimmed.match(/^(\d)[:：]\s*(.*)/);
+                    if (m) {
+                        const idx = parseInt(m[1]);
+                        const keyMap = { 1: 'g1', 2: 'g2', 3: 'g3', 4: 'g4', 5: 'g5', 6: 'g6', 7: 'g7', 8: 'g8' };
+                        key = keyMap[idx];
+                        const valPart = m[2].trim();
+                        if (idx === 7) {
+                            const merged = valPart.match(/^(\d{2,4})(\d)[:：]\s*(\d{2})$/);
+                            if (merged && parseInt(merged[2]) === 8) {
+                                prizes['g7'] = [merged[1]];
+                                prizes['g8'] = [merged[3]];
+                                continue;
+                            }
+                        }
+                        nums = valPart.split(/\s*-\s*/).map(n => n.trim()).filter(n => /^\d+$/.test(n));
+                    }
+                }
+                if (key && nums.length > 0) prizes[key] = nums;
+            }
+            if (Object.keys(prizes).length > 0) {
+                results.push({ province: provinceName, date: dateStr, prizes });
+            }
+        }
+        return results.length > 0 ? results : null;
     }
 
-    /* Combined fetch: RSS first, then HTML fallback */
+    /* Combined fetch: minhngoc direct → RSS → xskt HTML */
     async function fetchXSMN(dateStr) {
-        // Try RSS first (fast, no CORS)
+        // 1. minhngoc.net (direct + proxy attempts)
+        const minhngocResult = await fetchFromMinhngoc(dateStr);
+        if (minhngocResult && minhngocResult.length) return minhngocResult;
+
+        // 2. xskt.com.vn RSS via proxy
         const rssResult = await fetchFromRSS(dateStr);
         if (rssResult && rssResult.length) return rssResult;
 
-        // Fallback: HTML page via CORS proxy
-        const htmlResult = await fetchFromHTML(dateStr);
-        if (htmlResult && htmlResult.length) return htmlResult;
+        // 3. xskt.com.vn HTML via proxy
+        const xsktResult = await fetchFromXsktHTML(dateStr);
+        if (xsktResult && xsktResult.length) return xsktResult;
 
         return null;
     }
@@ -545,6 +586,21 @@ const App = (() => {
                 return;
             }
 
+            // Sort results to match official XSMN schedule order
+            const dow = new Date(dateStr).getDay();
+            const scheduleOrder = XSMN_SCHEDULE[dow] || [];
+            results.sort((a, b) => {
+                const idxA = scheduleOrder.findIndex(s =>
+                    a.province.toLowerCase().includes(s.toLowerCase()) ||
+                    s.toLowerCase().includes(a.province.toLowerCase())
+                );
+                const idxB = scheduleOrder.findIndex(s =>
+                    b.province.toLowerCase().includes(s.toLowerCase()) ||
+                    s.toLowerCase().includes(b.province.toLowerCase())
+                );
+                return (idxA === -1 ? 999 : idxA) - (idxB === -1 ? 999 : idxB);
+            });
+
             // Filter by selected province
             if (selectedProvince !== 'all') {
                 const filtered = results.filter(r =>
@@ -600,7 +656,6 @@ const App = (() => {
             }
 
             // Render results table with highlights
-            const dow = new Date(dateStr).getDay();
             let html = `<div class="results-summary">📊 <strong>${DAY_NAMES[dow]}</strong>, ${fmtDisplay(dateStr)} — ${results.length} đài — Dò ${userNums.length} vé</div>`;
 
             html += renderKQXSTable(results, dateStr, matchedNumbersPerProvince);
